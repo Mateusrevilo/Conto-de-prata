@@ -2,7 +2,11 @@
   "use strict";
 
   const DEFAULT_REPO = { owner: "Mateusrevilo", repo: "Conto-de-prata" };
-  const AUTH_KEY = "painel_auth";
+  const LEGACY_AUTH_KEY = "painel_auth";
+  const SESSION_KEY = "painel_sessao";
+  const VAULT_KEY = "painel_cofre";
+  const LOGIN = { user: "contodeprataadmin", salt: "oviOUokwvukoIgTv0+/F3A==", hash: "YHhCtToOw8n54DfSPQ2NYXGl3wg9g9FZg2z466BrWxY=", iterations: 210000 };
+  const VAULT_ITERATIONS = 310000;
   const API = "https://api.github.com";
   const PRODUCTS_PATH = "data/products.json";
   const CONFIG_PATH = "data/config.json";
@@ -114,13 +118,47 @@
   }
 
   /* ---------- Auth ---------- */
-  function loadAuth() {
-    try { return JSON.parse(localStorage.getItem(AUTH_KEY) || sessionStorage.getItem(AUTH_KEY)); } catch { return null; }
+  const bytesToB64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const b64ToBytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+
+  async function pbkdf2(secret, salt, iterations) {
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), "PBKDF2", false, ["deriveBits", "deriveKey"]);
+    return { base, params: { name: "PBKDF2", hash: "SHA-256", salt, iterations } };
   }
-  function saveAuth(auth, remember) {
-    localStorage.removeItem(AUTH_KEY); sessionStorage.removeItem(AUTH_KEY);
-    (remember ? localStorage : sessionStorage).setItem(AUTH_KEY, JSON.stringify(auth));
+  async function checkLogin(user, password) {
+    if (user !== LOGIN.user) return false;
+    const { base, params } = await pbkdf2(user + "\n" + password, b64ToBytes(LOGIN.salt), LOGIN.iterations);
+    const bits = await crypto.subtle.deriveBits(params, base, 256);
+    return bytesToB64(bits) === LOGIN.hash;
   }
+  async function vaultKey(password, salt) {
+    const { base, params } = await pbkdf2(password, salt, VAULT_ITERATIONS);
+    return crypto.subtle.deriveKey(params, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  }
+  function loadVault() {
+    try { return JSON.parse(localStorage.getItem(VAULT_KEY)); } catch { return null; }
+  }
+  async function saveVault(auth, password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await vaultKey(password, salt);
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(auth)));
+    localStorage.setItem(VAULT_KEY, JSON.stringify({ salt: bytesToB64(salt), iv: bytesToB64(iv), ct: bytesToB64(ct) }));
+  }
+  async function openVault(password) {
+    const v = loadVault();
+    if (!v) return null;
+    try {
+      const key = await vaultKey(password, b64ToBytes(v.salt));
+      const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64ToBytes(v.iv) }, key, b64ToBytes(v.ct));
+      return JSON.parse(new TextDecoder().decode(pt));
+    } catch { return null; }
+  }
+  function loadSession() {
+    try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
+  }
+  function saveSession(auth) { sessionStorage.setItem(SESSION_KEY, JSON.stringify(auth)); }
+  function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
 
   async function connect(auth) {
     st.auth = auth;
@@ -151,7 +189,17 @@
     const d = st.auth || detectRepo();
     const f = $("#loginForm");
     f.owner.value = d.owner; f.repo.value = d.repo;
+    f.password.value = "";
+    showTokenSetup(!loadVault());
+    $("#loginError").hidden = true;
     if (err) { $("#loginError").textContent = err; $("#loginError").hidden = false; }
+  }
+
+  function showTokenSetup(show, info) {
+    $("#tokenSetup").hidden = !show;
+    $("#loginForm").token.required = show;
+    $("#changeToken").hidden = show || !loadVault();
+    if (info) $("#setupInfo").textContent = info;
   }
 
   function authErrorMessage(e) {
@@ -435,28 +483,47 @@
     $("#loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const f = e.target;
-      const auth = { token: f.token.value.trim(), owner: f.owner.value.trim(), repo: f.repo.value.trim() };
+      const btn = $("#loginBtn");
+      const fail = (msg) => { $("#loginError").textContent = msg; $("#loginError").hidden = false; };
       $("#loginError").hidden = true;
-      $("#loginBtn").disabled = true;
-      $("#loginBtn").textContent = "Conectando...";
+      btn.disabled = true;
+      btn.textContent = "Entrando...";
       try {
-        await connect(auth);
-        saveAuth(auth, f.remember.checked);
-        f.token.value = "";
+        const user = f.user.value.trim(), password = f.password.value;
+        if (!(await checkLogin(user, password))) return fail("Usuário ou senha incorretos.");
+        const token = f.token.value.trim();
+        let auth;
+        if (token) {
+          auth = { token, owner: f.owner.value.trim() || detectRepo().owner, repo: f.repo.value.trim() || detectRepo().repo };
+        } else {
+          auth = await openVault(password);
+          if (!auth) {
+            showTokenSetup(true, "Não foi possível abrir o acesso salvo neste aparelho. Cole o token do GitHub novamente.");
+            return fail("Informe o token do GitHub.");
+          }
+        }
+        btn.textContent = "Conectando...";
+        try {
+          await connect(auth);
+        } catch (err) {
+          st.auth = null;
+          if (!token) showTokenSetup(true, "O token salvo neste aparelho não funciona mais (pode ter expirado). Cole um novo token.");
+          if (err.status === 404) $("#repoDetails").open = true;
+          return fail(authErrorMessage(err));
+        }
+        if (token) await saveVault(auth, password);
+        saveSession(auth);
+        f.token.value = ""; f.password.value = "";
         showApp();
-      } catch (err) {
-        st.auth = null;
-        $("#loginError").textContent = authErrorMessage(err);
-        $("#loginError").hidden = false;
-        if (err.status === 404) $("#repoDetails").open = true;
       } finally {
-        $("#loginBtn").disabled = false;
-        $("#loginBtn").textContent = "Entrar";
+        btn.disabled = false;
+        btn.textContent = "Entrar";
       }
     });
+    $("#changeToken").addEventListener("click", () => showTokenSetup(true, "Cole o novo token do GitHub. Ele vai substituir o que está salvo neste aparelho."));
     $("#logoutBtn").addEventListener("click", () => {
       if (hasPending() && !confirm("Há alterações não publicadas. Sair mesmo assim?")) return;
-      localStorage.removeItem(AUTH_KEY); sessionStorage.removeItem(AUTH_KEY);
+      clearSession();
       st.auth = null;
       showLogin();
     });
@@ -532,13 +599,17 @@
 
   async function init() {
     bind();
-    const saved = loadAuth();
+    localStorage.removeItem(LEGACY_AUTH_KEY);
+    sessionStorage.removeItem(LEGACY_AUTH_KEY);
+    const saved = loadSession();
     if (!saved) return showLogin();
     try {
       await connect(saved);
       showApp();
     } catch (e) {
-      showLogin(authErrorMessage(e));
+      clearSession();
+      st.auth = null;
+      showLogin();
     }
   }
   init();

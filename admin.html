@@ -13,31 +13,36 @@
   <section class="login" id="loginView">
     <form class="login__card" id="loginForm">
       <h1>Painel da loja</h1>
-      <p class="muted">Entre com seu token do GitHub para gerenciar os produtos.</p>
-      <label class="field">
-        <span>Token do GitHub</span>
-        <input type="password" name="token" required autocomplete="current-password" placeholder="github_pat_..." />
-      </label>
-      <details class="adv" id="repoDetails">
-        <summary>Repositório</summary>
-        <div class="row">
-          <label class="field"><span>Usuário</span><input name="owner" required /></label>
-          <label class="field"><span>Repositório</span><input name="repo" required /></label>
-        </div>
-      </details>
-      <label class="check"><input type="checkbox" name="remember" checked /> Lembrar neste dispositivo</label>
+      <p class="muted">Entre com seu usuário e senha.</p>
+      <label class="field"><span>Usuário</span><input name="user" required autocomplete="username" autocapitalize="none" spellcheck="false" /></label>
+      <label class="field"><span>Senha</span><input type="password" name="password" required autocomplete="current-password" /></label>
+      <div class="setup" id="tokenSetup" hidden>
+        <p class="setup__info" id="setupInfo">Primeiro acesso neste aparelho: cole o token do GitHub. Ele fica guardado aqui, protegido pela sua senha, e não será pedido de novo.</p>
+        <label class="field">
+          <span>Token do GitHub</span>
+          <input type="password" name="token" autocomplete="off" placeholder="github_pat_..." />
+        </label>
+        <details class="adv" id="repoDetails">
+          <summary>Repositório</summary>
+          <div class="row">
+            <label class="field"><span>Usuário do GitHub</span><input name="owner" /></label>
+            <label class="field"><span>Repositório</span><input name="repo" /></label>
+          </div>
+        </details>
+        <details class="help">
+          <summary>Como criar o token?</summary>
+          <ol>
+            <li>Acesse <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a></li>
+            <li>Dê um nome (ex.: "Painel loja") e escolha a validade.</li>
+            <li>Em <b>Repository access</b>, escolha <b>Only select repositories</b> e selecione o repositório do site.</li>
+            <li>Em <b>Permissions → Repository permissions → Contents</b>, escolha <b>Read and write</b>.</li>
+            <li>Clique em <b>Generate token</b>, copie e cole aqui.</li>
+          </ol>
+        </details>
+      </div>
       <p class="error" id="loginError" hidden></p>
       <button class="btn btn--primary btn--block" type="submit" id="loginBtn">Entrar</button>
-      <details class="help">
-        <summary>Como criar o token?</summary>
-        <ol>
-          <li>Acesse <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a></li>
-          <li>Dê um nome (ex.: "Painel loja") e escolha a validade.</li>
-          <li>Em <b>Repository access</b>, escolha <b>Only select repositories</b> e selecione o repositório do site.</li>
-          <li>Em <b>Permissions → Repository permissions → Contents</b>, escolha <b>Read and write</b>.</li>
-          <li>Clique em <b>Generate token</b>, copie e cole aqui.</li>
-        </ol>
-      </details>
+      <button type="button" class="link link--sm" id="changeToken" hidden>Trocar token do GitHub</button>
     </form>
   </section>
 
