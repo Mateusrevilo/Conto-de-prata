@@ -85,6 +85,7 @@
     $("#brandName").hidden = !!cfg.logo && cfg.mostrarNome === false;
     renderAnnounce();
     renderHero();
+    try { $("#adminLink").hidden = !localStorage.getItem("painel_cofre"); } catch { /* storage indisponível */ }
     $("#footerName").textContent = cfg.nome;
     $("#footerSlogan").textContent = cfg.slogan;
     const info = [];

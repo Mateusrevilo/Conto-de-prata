@@ -209,6 +209,14 @@ h1, h2, .card__name { font-family: var(--font-title); }
 .footer__inner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 18px; }
 .footer__info { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; color: #d1d5db; }
 .footer__info a { color: #fff; }
+.footer__bottom { margin-top: 22px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.08); }
+.footer__admin { display: inline-flex; align-items: center; gap: 6px; color: #6b7280; font-size: .8rem; text-decoration: none; }
+.footer__admin:hover { color: #d1d5db; }
+.footer__admin svg { width: 13px; height: 13px; }
+.admin-btn { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); color: var(--text); background: var(--card); font-size: .88rem; font-weight: 600; text-decoration: none; flex-shrink: 0; }
+.admin-btn[hidden] { display: none; }
+.admin-btn:hover { background: var(--bg); }
+.admin-btn svg { width: 16px; height: 16px; }
 
 /* WhatsApp float */
 .wa-float { position: fixed; right: 18px; bottom: 18px; width: 58px; height: 58px; border-radius: 50%; background: var(--whats); color: #fff; display: grid; place-items: center; box-shadow: 0 6px 20px rgba(37,211,102,.45); z-index: 30; transition: transform .15s; }
@@ -225,4 +233,8 @@ h1, h2, .card__name { font-family: var(--font-title); }
   .brand { margin-right: auto; font-size: 1.2rem; }
   .ig-btn { width: 40px; height: 40px; }
   .card__actions .btn--primary span { display: none; }
+}
+@media (max-width: 380px) {
+  .admin-btn { padding: 0 11px; }
+  .admin-btn span { display: none; }
 }
