@@ -13,7 +13,7 @@ Site estático (HTML + CSS + JS puro, sem build) hospedado no GitHub Pages. O cl
 - Painel administrativo em `/admin.html`
 
 ## Painel (`/admin.html`)
-Cadastra, edita e remove produtos, altera preço e disponibilidade, envia fotos e edita as configurações da loja. Na aba **Aparência** dá para trocar cores e fonte (com temas prontos e prévia), logo, aviso no topo, banners em carrossel (foto, título, texto e botão com link) e mostrar/esconder a seção do Instagram. As alterações ficam pendentes até clicar em **Publicar no site**; o painel grava os arquivos neste repositório pela API do GitHub e o site atualiza em 1–2 minutos.
+Cadastra, edita e remove produtos, altera preço e disponibilidade, envia até 8 fotos por produto (com capa e ordem) e edita as configurações da loja. Na aba **Aparência** dá para trocar cores e fonte (com temas prontos e prévia), logo, aviso no topo, banners em carrossel (foto, título, texto e botão com link) e mostrar/esconder a seção do Instagram. As alterações ficam pendentes até clicar em **Publicar no site**; o painel grava os arquivos neste repositório pela API do GitHub e o site atualiza em 1–2 minutos.
 
 O login é feito com usuário e senha. No primeiro acesso em cada aparelho, o painel também pede um token do GitHub, que fica salvo só naquele aparelho, criptografado com a senha. A senha não fica gravada no repositório (só um hash PBKDF2 em `js/admin.js`).
 

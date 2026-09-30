@@ -88,7 +88,12 @@
   <div class="overlay" id="productOverlay" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pmName">
       <button class="icon-btn modal__close" data-close aria-label="Fechar">&times;</button>
-      <div class="modal__img"><img id="pmImg" alt="" /></div>
+      <div class="modal__img">
+        <div class="gallery" id="pmGallery"></div>
+        <button type="button" class="gallery__nav gallery__nav--prev" id="pmPrev" aria-label="Foto anterior" hidden>&#8249;</button>
+        <button type="button" class="gallery__nav gallery__nav--next" id="pmNext" aria-label="Próxima foto" hidden>&#8250;</button>
+        <div class="gallery__dots" id="pmDots"></div>
+      </div>
       <div class="modal__body">
         <span class="tag" id="pmCat"></span>
         <h2 id="pmName"></h2>

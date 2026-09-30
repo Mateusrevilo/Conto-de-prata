@@ -226,7 +226,7 @@
       return `
         <article class="card ${p.disponivel ? "" : "out"}" data-id="${esc(p.id)}">
           <button class="card__img" data-open aria-label="Ver ${esc(p.nome)}">
-            <img src="${esc(p.imagem || PLACEHOLDER)}" alt="${esc(p.nome)}" loading="lazy" onerror="this.src='${PLACEHOLDER}'" />${badge}
+            <img src="${esc(p.imagem || PLACEHOLDER)}" alt="${esc(p.nome)}" loading="lazy" onerror="this.src='${PLACEHOLDER}'" />${badge}${photosOf(p).length > 1 ? `<span class="card__photos">${photosOf(p).length} fotos</span>` : ""}
           </button>
           <div class="card__body">
             <span class="card__cat">${esc(p.categoria || "")}</span>
@@ -251,9 +251,7 @@
     const p = byId(id);
     if (!p) return;
     state.modal = { p, qty: 1, sel: {} };
-    $("#pmImg").src = p.imagem || PLACEHOLDER;
-    $("#pmImg").onerror = function () { this.src = PLACEHOLDER; };
-    $("#pmImg").alt = p.nome;
+    renderGallery(p);
     $("#pmCat").textContent = p.categoria || "";
     $("#pmName").textContent = p.nome;
     $("#pmPrice").innerHTML = priceHtml(p).replace(/^<div class="price">|<\/div>$/g, "");
@@ -271,6 +269,30 @@
     $("#pmBuyNow").lastChild.textContent = p.disponivel ? " Pedir só este pelo WhatsApp" : " Avise-me quando chegar";
     show("#productOverlay");
     if (push) history.pushState({ product: id }, "", "#produto/" + encodeURIComponent(id));
+  }
+
+  const photosOf = (p) => (p.imagens?.length ? p.imagens : [p.imagem]).filter(Boolean);
+  function renderGallery(p) {
+    const pics = photosOf(p);
+    const g = $("#pmGallery"), dots = $("#pmDots");
+    g.innerHTML = (pics.length ? pics : [PLACEHOLDER]).map((src, i) =>
+      `<img src="${esc(src)}" alt="${esc(p.nome)}${pics.length > 1 ? ` - foto ${i + 1}` : ""}" onerror="this.src='${PLACEHOLDER}'" />`).join("");
+    g.style.scrollBehavior = "auto";
+    g.scrollLeft = 0;
+    g.style.scrollBehavior = "";
+    const many = pics.length > 1;
+    $("#pmPrev").hidden = $("#pmNext").hidden = !many;
+    dots.innerHTML = many ? pics.map((_, i) => `<button type="button" data-i="${i}" aria-label="Foto ${i + 1}"${i ? "" : ' class="active"'}></button>`).join("") : "";
+  }
+  function setupGallery() {
+    const g = $("#pmGallery");
+    const current = () => Math.round(g.scrollLeft / (g.clientWidth || 1));
+    const count = () => g.children.length;
+    const go = (i) => g.scrollTo({ left: ((i + count()) % count()) * g.clientWidth });
+    g.addEventListener("scroll", () => $$("#pmDots button").forEach((d, j) => d.classList.toggle("active", j === current())), { passive: true });
+    $("#pmPrev").addEventListener("click", () => go(current() - 1));
+    $("#pmNext").addEventListener("click", () => go(current() + 1));
+    $("#pmDots").addEventListener("click", (e) => { const d = e.target.closest("[data-i]"); if (d) go(+d.dataset.i); });
   }
 
   function validateSelection() {
@@ -460,6 +482,7 @@
   function bind() {
     $("#search").addEventListener("input", (e) => { state.query = e.target.value; renderGrid(); });
     $("#sort").addEventListener("change", (e) => { state.sort = e.target.value; renderGrid(); });
+    setupGallery();
     $("#categories").addEventListener("click", (e) => {
       const b = e.target.closest("[data-cat]");
       if (!b) return;

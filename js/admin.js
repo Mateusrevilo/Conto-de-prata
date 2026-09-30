@@ -12,6 +12,7 @@
   const CONFIG_PATH = "data/config.json";
   const IMG_DIR = "img/produtos/";
   const MAX_IMG = 1200;
+  const MAX_PHOTOS = 8;
   const SITE_IMG_DIR = "img/site/";
   const FONTS = [
     ["Playfair Display", "Playfair Display (elegante)"],
@@ -49,7 +50,7 @@
     localPreviews: {},   // imagens já enviadas, exibidas localmente até o site atualizar
     deletedImages: new Set(),
     editingId: null,
-    editImage: null,     // { path, dataUrl, base64 } | null
+    editImages: [],      // [{ path } | { dataUrl, base64 }]
   };
 
   /* ---------- Utils ---------- */
@@ -304,7 +305,7 @@
   function openEditor(id) {
     const p = id ? st.products.find((x) => x.id === id) : null;
     st.editingId = id || null;
-    st.editImage = null;
+    st.editImages = productPhotos(p).map((path) => ({ path }));
     const f = $("#productForm");
     f.reset();
     $("#editorTitle").textContent = p ? "Editar produto" : "Novo produto";
@@ -316,19 +317,42 @@
     f.variacoes.value = (p?.variacoes || []).map((v) => `${v.nome}: ${v.opcoes.join(", ")}`).join("\n");
     f.disponivel.checked = p ? p.disponivel !== false : true;
     f.destaque.checked = !!p?.destaque;
-    f.imagem.value = p?.imagem && !st.pendingImages[p.imagem] ? p.imagem : "";
-    setPreview(p?.imagem);
+    $("#imgUrl").value = "";
+    renderPhotos();
     $("#formError").hidden = true;
     $$(".field", f).forEach((x) => x.classList.remove("invalid"));
     $("#editor").hidden = false;
     setTimeout(() => f.nome.focus(), 50);
   }
-  function setPreview(path) {
-    const img = $("#imgPreview");
-    img.dataset.path = path || "";
-    delete img.dataset.triedRaw;
-    img.onerror = () => __imgFallback(img);
-    img.src = imgSrc(path);
+  const productPhotos = (p) => (p?.imagens?.length ? p.imagens : [p?.imagem]).filter(Boolean);
+  function renderPhotos() {
+    const list = st.editImages;
+    $("#photoCount").textContent = list.length ? `(${list.length}/${MAX_PHOTOS})` : "";
+    $("#photoGrid").innerHTML = list.length ? list.map((ph, i) => `
+      <div class="ph ${i ? "" : "cover"}" data-i="${i}">
+        <img alt="Foto ${i + 1}" data-path="${esc(ph.path || "")}" src="${esc(ph.dataUrl || imgSrc(ph.path))}" />
+        ${i ? "" : `<span class="ph__cover">Capa</span>`}
+        <div class="ph__bar">
+          <button type="button" data-ph="cover" ${i ? "" : "disabled"} title="Usar como capa" aria-label="Usar como capa">★</button>
+          <button type="button" data-ph="left" ${i ? "" : "disabled"} aria-label="Mover para a esquerda">‹</button>
+          <button type="button" data-ph="right" ${i === list.length - 1 ? "disabled" : ""} aria-label="Mover para a direita">›</button>
+          <button type="button" data-ph="del" title="Remover foto" aria-label="Remover foto">✕</button>
+        </div>
+      </div>`).join("") : `<label class="photos__empty" for="imgFile">Nenhuma foto. Clique para escolher.</label>`;
+    $$("#photoGrid img[data-path]").forEach((img) => { if (img.dataset.path) img.onerror = () => __imgFallback(img); });
+  }
+  async function addPhotoFiles(files) {
+    const room = MAX_PHOTOS - st.editImages.length;
+    if (files.length > room) toast(`Máximo de ${MAX_PHOTOS} fotos por produto. ${room > 0 ? `Só ${room} foram adicionadas.` : ""}`, true);
+    for (const file of files.slice(0, Math.max(0, room))) {
+      try {
+        const dataUrl = await resizeImage(file);
+        st.editImages.push({ dataUrl, base64: dataUrl.split(",")[1] });
+        renderPhotos();
+      } catch (err) {
+        toast(err.message, true);
+      }
+    }
   }
   function closeEditor() { $("#editor").hidden = true; }
 
@@ -389,18 +413,18 @@
       id = base;
       for (let i = 2; st.products.some((p) => p.id === id); i++) id = `${base}-${i}`;
     }
-    let imagem = f.imagem.value.trim() || existing?.imagem || "";
-    if (st.editImage) {
-      imagem = `${IMG_DIR}${id}-${Date.now().toString(36)}.jpg`;
-      st.pendingImages[imagem] = st.editImage.base64;
-    }
-    if (existing?.imagem && existing.imagem !== imagem) {
-      if (st.pendingImages[existing.imagem]) delete st.pendingImages[existing.imagem];
-      else if (existing.imagem.startsWith(IMG_DIR)) st.deletedImages.add(existing.imagem);
-    }
+    const stamp = Date.now().toString(36);
+    const imagens = st.editImages.map((ph, i) => {
+      if (ph.path) return ph.path;
+      const path = `${IMG_DIR}${id}-${stamp}${i ? "-" + i : ""}.jpg`;
+      st.pendingImages[path] = ph.base64;
+      return path;
+    });
+    productPhotos(existing).filter((old) => !imagens.includes(old)).forEach(dropImage);
     const product = { id, nome, categoria, preco: Math.round(preco * 100) / 100 };
     if (precoAntigo) product.precoAntigo = Math.round(precoAntigo * 100) / 100;
-    product.imagem = imagem;
+    product.imagem = imagens[0] || "";
+    if (imagens.length > 1) product.imagens = imagens;
     product.descricao = f.descricao.value.trim();
     if (variacoes.length) product.variacoes = variacoes;
     if (f.destaque.checked) product.destaque = true;
@@ -413,14 +437,16 @@
     toast(existing ? "Produto atualizado. Clique em \"Publicar no site\"." : "Produto adicionado. Clique em \"Publicar no site\".");
   }
 
+  function dropImage(path) {
+    if (st.pendingImages[path]) delete st.pendingImages[path];
+    else if (path.startsWith(IMG_DIR)) st.deletedImages.add(path);
+  }
+
   function removeProduct(id) {
     const p = st.products.find((x) => x.id === id);
     if (!p || !confirm(`Remover "${p.nome}" do catálogo?`)) return;
     st.products = st.products.filter((x) => x.id !== id);
-    if (p.imagem) {
-      if (st.pendingImages[p.imagem]) delete st.pendingImages[p.imagem];
-      else if (p.imagem.startsWith(IMG_DIR)) st.deletedImages.add(p.imagem);
-    }
+    productPhotos(p).forEach(dropImage);
     renderFilters(); renderList(); renderPending();
     toast("Produto removido. Clique em \"Publicar no site\".");
   }
@@ -716,7 +742,7 @@
     btn.disabled = true;
     btn.textContent = "Publicando...";
     try {
-      const used = new Set([...st.products.map((p) => p.imagem), st.config.logo, ...(st.config.banners || []).map((b) => b.imagem)].filter(Boolean));
+      const used = new Set([...st.products.flatMap(productPhotos), st.config.logo, ...(st.config.banners || []).map((b) => b.imagem)].filter(Boolean));
       for (const [path, b64] of Object.entries(st.pendingImages)) {
         if (used.has(path)) await putFile(path, b64, `Adiciona imagem ${path.split("/").pop()}`);
       }
@@ -829,19 +855,34 @@
     });
 
     $("#imgFile").addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        const dataUrl = await resizeImage(file);
-        st.editImage = { dataUrl, base64: dataUrl.split(",")[1] };
-        $("#imgPreview").src = dataUrl;
-        $("#imgUrl").value = "";
-      } catch (err) {
-        toast(err.message, true);
-      }
+      const files = [...e.target.files];
       e.target.value = "";
+      await addPhotoFiles(files);
     });
-    $("#imgUrl").addEventListener("change", (e) => { st.editImage = null; setPreview(e.target.value.trim()); });
+    const addUrl = () => {
+      const url = $("#imgUrl").value.trim();
+      if (!url) return;
+      if (st.editImages.length >= MAX_PHOTOS) return toast(`Máximo de ${MAX_PHOTOS} fotos por produto.`, true);
+      st.editImages.push({ path: url });
+      $("#imgUrl").value = "";
+      renderPhotos();
+    };
+    $("#imgUrlAdd").addEventListener("click", addUrl);
+    $("#imgUrl").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addUrl(); } });
+    $("#photoGrid").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-ph]");
+      if (!btn) return;
+      const list = st.editImages;
+      const i = +btn.closest(".ph").dataset.i;
+      const act = btn.dataset.ph;
+      if (act === "del") list.splice(i, 1);
+      else if (act === "cover") list.unshift(...list.splice(i, 1));
+      else {
+        const j = act === "left" ? i - 1 : i + 1;
+        [list[i], list[j]] = [list[j], list[i]];
+      }
+      renderPhotos();
+    });
 
     $("#productForm").addEventListener("submit", saveProduct);
     $("#editor").addEventListener("click", (e) => { if (e.target.id === "editor" || e.target.closest("[data-close]")) closeEditor(); });

@@ -182,15 +182,19 @@
         <button type="button" class="icon-btn" data-close aria-label="Fechar">&times;</button>
       </div>
       <div class="dialog__body">
-        <div class="img-picker">
-          <img id="imgPreview" alt="" />
-          <div>
-            <label class="btn btn--ghost">
-              Escolher foto
-              <input type="file" id="imgFile" accept="image/*" hidden />
+        <div class="photos">
+          <div class="photos__head">
+            <span class="photos__title">Fotos <small class="muted" id="photoCount"></small></span>
+            <label class="btn btn--ghost btn--sm">
+              + Adicionar fotos
+              <input type="file" id="imgFile" accept="image/*" multiple hidden />
             </label>
-            <p class="muted small">JPG ou PNG. A foto é redimensionada automaticamente.</p>
-            <input name="imagem" id="imgUrl" placeholder="ou cole um link de imagem" />
+          </div>
+          <div class="photos__grid" id="photoGrid"></div>
+          <p class="muted small">Pode escolher várias de uma vez. A primeira é a capa do produto; use ★ para trocar a capa e as setas para mudar a ordem.</p>
+          <div class="photos__url">
+            <input id="imgUrl" placeholder="ou cole um link de imagem" />
+            <button type="button" class="btn btn--ghost btn--sm" id="imgUrlAdd">Adicionar</button>
           </div>
         </div>
         <label class="field"><span>Nome *</span><input name="nome" required /></label>
