@@ -15,11 +15,11 @@ Site estático (HTML + CSS + JS puro, sem build) hospedado no GitHub Pages. O cl
 ## Painel (`/admin.html`)
 Cadastra, edita e remove produtos, altera preço e disponibilidade, envia fotos e edita as configurações da loja. As alterações ficam pendentes até clicar em **Publicar no site**; o painel grava os arquivos neste repositório pela API do GitHub e o site atualiza em 1–2 minutos.
 
-Para entrar, crie um token em https://github.com/settings/personal-access-tokens/new:
+O login é feito com usuário e senha. No primeiro acesso em cada aparelho, o painel também pede um token do GitHub, que fica salvo só naquele aparelho, criptografado com a senha. A senha não fica gravada no repositório (só um hash PBKDF2 em `js/admin.js`).
+
+Para criar o token, acesse https://github.com/settings/personal-access-tokens/new:
 - **Repository access**: *Only select repositories* → este repositório
 - **Repository permissions → Contents**: *Read and write*
-
-O token fica só no seu navegador (e, se marcar "Lembrar neste dispositivo", no `localStorage`).
 
 ## Arquivos de dados
 - `data/config.json`: nome, WhatsApp (55 + DDD + número), Instagram, banner, entrega, pagamentos
