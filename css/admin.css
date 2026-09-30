@@ -187,3 +187,10 @@ a { color: inherit; }
 .ph__bar button[data-ph=del] { color: #dc2626; }
 .photos__url { display: flex; gap: 6px; }
 .photos__url input { flex: 1; min-width: 0; }
+
+@media (max-width: 480px) {
+  .hide-sm { display: none; }
+  .topbar__inner { gap: 4px; }
+  .tab { padding: 8px 7px; font-size: 15px; }
+  .topbar__right { gap: 10px; }
+}
