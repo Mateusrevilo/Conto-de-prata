@@ -166,7 +166,7 @@ input, select, textarea { font: inherit; color: inherit; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (max-width: 560px) {
-  .header__inner { flex-wrap: wrap; height: auto; padding: 10px 0; }
+  .header__inner { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; }
   .search { order: 3; flex-basis: 100%; max-width: none; }
   .brand { margin-right: auto; }
   .card__actions .btn--primary span { display: none; }
