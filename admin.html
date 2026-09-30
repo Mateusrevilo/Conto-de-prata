@@ -53,7 +53,8 @@
         <strong id="storeName">Painel</strong>
         <nav class="tabs">
           <button class="tab active" data-tab="products">Produtos</button>
-          <button class="tab" data-tab="settings">Configurações</button>
+          <button class="tab" data-tab="appearance">Aparência</button>
+          <button class="tab" data-tab="settings">Loja</button>
         </nav>
         <div class="topbar__right">
           <a href="./" target="_blank" rel="noopener" class="link">Ver site ↗</a>
@@ -74,6 +75,63 @@
         <p class="empty" id="emptyList" hidden>Nenhum produto encontrado.</p>
       </section>
 
+      <section id="tab-appearance" hidden>
+        <p class="muted small hint">As mudanças aparecem na prévia na hora. Clique em <b>Publicar no site</b> para salvar.</p>
+        <div class="appearance">
+          <div class="settings">
+            <fieldset>
+              <legend>Temas prontos</legend>
+              <div class="themes" id="themes"></div>
+            </fieldset>
+            <fieldset>
+              <legend>Cores e fonte</legend>
+              <div class="colors">
+                <label class="color"><input type="color" data-cfg="tema.primaria" /><span>Principal<small>botões, carrinho, aviso</small></span></label>
+                <label class="color"><input type="color" data-cfg="tema.fundo" /><span>Fundo da página</span></label>
+                <label class="color"><input type="color" data-cfg="tema.texto" /><span>Textos</span></label>
+                <label class="color"><input type="color" data-cfg="tema.banner" /><span>Fundo do banner<small>quando não tem foto</small></span></label>
+                <label class="color"><input type="color" data-cfg="tema.destaque" /><span>Brilho do título<small>detalhe do banner</small></span></label>
+                <label class="color"><input type="color" data-cfg="tema.promo" /><span>Selo de promoção</span></label>
+              </div>
+              <label class="field"><span>Fonte dos títulos</span><select data-cfg="tema.fonteTitulos" id="fontSelect"></select></label>
+            </fieldset>
+            <fieldset>
+              <legend>Logo</legend>
+              <div class="img-picker">
+                <img id="logoPreview" class="logo-preview" alt="" />
+                <div>
+                  <label class="btn btn--ghost">Escolher logo<input type="file" id="logoFile" accept="image/*" hidden /></label>
+                  <button type="button" class="link" id="logoRemove">Remover logo</button>
+                  <p class="muted small">PNG com fundo transparente fica melhor. Sem logo, aparece o nome da loja.</p>
+                </div>
+              </div>
+              <label class="check"><input type="checkbox" data-cfg="mostrarNome" /> Mostrar o nome da loja ao lado da logo</label>
+            </fieldset>
+            <fieldset>
+              <legend>Aviso no topo do site</legend>
+              <label class="check"><input type="checkbox" data-cfg="aviso.ativo" /> Mostrar aviso</label>
+              <label class="field"><span>Texto</span><input data-cfg="aviso.texto" placeholder="Ex.: Frete grátis acima de R$ 200" /></label>
+              <label class="field"><span>Link (opcional)</span><input data-cfg="aviso.link" list="linkList" placeholder="Escolha ou cole um link" /></label>
+            </fieldset>
+            <fieldset>
+              <legend>Banners</legend>
+              <p class="muted small">Passam sozinhos no topo do site. Foto ideal: horizontal, 1600 × 600.</p>
+              <div class="banners" id="bannerList"></div>
+              <button type="button" class="btn btn--ghost" id="addBanner">+ Adicionar banner</button>
+            </fieldset>
+            <fieldset>
+              <legend>Seções</legend>
+              <label class="check"><input type="checkbox" data-cfg="secoes.instagram" /> Mostrar seção do Instagram</label>
+            </fieldset>
+          </div>
+          <aside class="preview-wrap">
+            <p class="muted small">Prévia</p>
+            <div class="pv" id="preview"></div>
+          </aside>
+        </div>
+        <datalist id="linkList"></datalist>
+      </section>
+
       <section id="tab-settings" hidden>
         <form class="settings" id="settingsForm">
           <fieldset>
@@ -88,11 +146,6 @@
               <label class="field"><span>Horário de atendimento</span><input name="horario" /></label>
               <label class="field"><span>Endereço (opcional)</span><input name="endereco" /></label>
             </div>
-          </fieldset>
-          <fieldset>
-            <legend>Banner da página inicial</legend>
-            <label class="field"><span>Título</span><input name="banner.titulo" /></label>
-            <label class="field"><span>Texto</span><textarea name="banner.texto" rows="2"></textarea></label>
           </fieldset>
           <fieldset>
             <legend>Entrega e pagamento</legend>

@@ -6,11 +6,44 @@
   "instagram": "contodepratass",
   "endereco": "",
   "horario": "Seg a Sáb, 9h às 18h",
-  "corPrimaria": "#1c1917",
   "logo": "",
-  "banner": {
-    "titulo": "Prata 925 para todos os momentos",
-    "texto": "Escolha suas peças favoritas, monte o pedido e finalize em segundos pelo WhatsApp."
+  "mostrarNome": true,
+  "tema": {
+    "primaria": "#1c1917",
+    "fundo": "#f7f5f2",
+    "texto": "#111827",
+    "destaque": "#d6d3d1",
+    "promo": "#dc2626",
+    "banner": "#1c1917",
+    "fonteTitulos": "Playfair Display"
+  },
+  "aviso": {
+    "ativo": true,
+    "texto": "Frete grátis nas compras acima de R$ 200",
+    "link": ""
+  },
+  "banners": [
+    {
+      "id": "b1",
+      "ativo": true,
+      "titulo": "Prata 925 para todos os momentos",
+      "texto": "Escolha suas peças favoritas, monte o pedido e finalize em segundos pelo WhatsApp.",
+      "imagem": "",
+      "botaoTexto": "Ver produtos",
+      "botaoLink": "#produtos"
+    },
+    {
+      "id": "b2",
+      "ativo": true,
+      "titulo": "Anéis delicados para usar todo dia",
+      "texto": "Peças em prata 925 com acabamento impecável.",
+      "imagem": "",
+      "botaoTexto": "Ver anéis",
+      "botaoLink": "#categoria/Anéis"
+    }
+  ],
+  "secoes": {
+    "instagram": true
   },
   "entrega": {
     "retirada": true,

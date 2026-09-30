@@ -12,6 +12,22 @@
   const CONFIG_PATH = "data/config.json";
   const IMG_DIR = "img/produtos/";
   const MAX_IMG = 1200;
+  const SITE_IMG_DIR = "img/site/";
+  const FONTS = [
+    ["Playfair Display", "Playfair Display (elegante)"],
+    ["Cormorant Garamond", "Cormorant Garamond (clássica)"],
+    ["Montserrat", "Montserrat (moderna)"],
+    ["Poppins", "Poppins (arredondada)"],
+    ["Inter", "Inter (simples)"],
+  ];
+  const THEMES = [
+    { nome: "Prata clássica", primaria: "#1c1917", fundo: "#f7f5f2", texto: "#111827", destaque: "#d6d3d1", promo: "#dc2626", banner: "#1c1917", fonteTitulos: "Playfair Display" },
+    { nome: "Rosé", primaria: "#9f4f5f", fundo: "#fdf6f5", texto: "#3b2a2d", destaque: "#f5c6cb", promo: "#be123c", banner: "#7a3b48", fonteTitulos: "Cormorant Garamond" },
+    { nome: "Dourado", primaria: "#7c5a1e", fundo: "#fbf8f1", texto: "#292218", destaque: "#e9c46a", promo: "#b91c1c", banner: "#3d2e14", fonteTitulos: "Playfair Display" },
+    { nome: "Minimalista", primaria: "#111111", fundo: "#ffffff", texto: "#111111", destaque: "#bdbdbd", promo: "#111111", banner: "#2b2b2b", fonteTitulos: "Montserrat" },
+    { nome: "Azul noite", primaria: "#1e3a5f", fundo: "#f4f7fb", texto: "#0f1c2e", destaque: "#b7c9e2", promo: "#dc2626", banner: "#0f2340", fonteTitulos: "Poppins" },
+    { nome: "Esmeralda", primaria: "#065f46", fundo: "#f3faf7", texto: "#0b2b22", destaque: "#a7f3d0", promo: "#dc2626", banner: "#064e3b", fonteTitulos: "Playfair Display" },
+  ];
 
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -61,7 +77,7 @@
   function imgSrc(path) {
     if (!path) return PLACEHOLDER;
     const b64 = st.pendingImages[path] || st.localPreviews[path];
-    if (b64) return "data:image/jpeg;base64," + b64;
+    if (b64) return `data:${/\.png$/i.test(path) ? "image/png" : "image/jpeg"};base64,` + b64;
     return path;
   }
   function rawUrl(path) {
@@ -171,7 +187,7 @@
   async function loadData() {
     const [pf, cf] = await Promise.all([getFile(PRODUCTS_PATH), getFile(CONFIG_PATH)]);
     st.products = pf ? JSON.parse(b64decode(pf.content)) : [];
-    st.config = cf ? JSON.parse(b64decode(cf.content)) : {};
+    st.config = normalizeConfig(cf ? JSON.parse(b64decode(cf.content)) : {});
     st.original = clone(st.products);
     st.originalConfig = clone(st.config);
     st.pendingImages = {};
@@ -216,6 +232,7 @@
     renderFilters();
     renderList();
     fillSettings();
+    renderAppearance();
     renderPending();
   }
 
@@ -315,21 +332,23 @@
   }
   function closeEditor() { $("#editor").hidden = true; }
 
-  function resizeImage(file) {
+  function resizeImage(file, max = MAX_IMG, type = "image/jpeg") {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
-        const scale = Math.min(1, MAX_IMG / Math.max(img.width, img.height));
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
         const c = document.createElement("canvas");
         c.width = Math.round(img.width * scale);
         c.height = Math.round(img.height * scale);
         const ctx = c.getContext("2d");
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, c.width, c.height);
+        if (type === "image/jpeg") {
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, c.width, c.height);
+        }
         ctx.drawImage(img, 0, 0, c.width, c.height);
         URL.revokeObjectURL(url);
-        resolve(c.toDataURL("image/jpeg", 0.85));
+        resolve(c.toDataURL(type, 0.85));
       };
       img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Imagem inválida")); };
       img.src = url;
@@ -442,13 +461,262 @@
     toast("Configurações aplicadas. Clique em \"Publicar no site\".");
   }
 
+  /* ---------- Aparência ---------- */
+  const newId = () => Math.random().toString(36).slice(2, 8);
+  const cssUrl = (s) => String(s).replace(/'/g, "%27");
+  const loadedFonts = [];
+  function ensureFont(name) {
+    if (!name || loadedFonts.includes(name)) return;
+    loadedFonts.push(name);
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=" + name.replace(/ /g, "+") + ":wght@500;600;700&display=swap";
+    document.head.appendChild(l);
+  }
+  function isLight(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    if (!m) return false;
+    const n = parseInt(m[1], 16);
+    return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 > 0.62;
+  }
+
+  function normalizeConfig(c) {
+    const { nome, ...defaults } = THEMES[0];
+    c.tema = { ...defaults, ...(c.corPrimaria ? { primaria: c.corPrimaria, banner: c.corPrimaria } : {}), ...(c.tema || {}) };
+    if (!Array.isArray(c.banners)) {
+      c.banners = c.banner ? [{ id: newId(), ativo: true, titulo: "", texto: "", imagem: "", botaoTexto: "", botaoLink: "", ...c.banner }] : [];
+    }
+    c.aviso = { ativo: false, texto: "", link: "", ...(c.aviso || {}) };
+    c.secoes = { instagram: true, ...(c.secoes || {}) };
+    if (c.logo === undefined) c.logo = "";
+    if (c.mostrarNome === undefined) c.mostrarNome = true;
+    delete c.corPrimaria;
+    delete c.banner;
+    return c;
+  }
+
+  function dropSiteImage(path) {
+    if (!path) return;
+    if (st.pendingImages[path]) delete st.pendingImages[path];
+    else if (path.startsWith(SITE_IMG_DIR)) st.deletedImages.add(path);
+  }
+
+  function themeMatches(t) {
+    return Object.keys(t).every((k) => k === "nome" || String(st.config.tema[k]).toLowerCase() === t[k].toLowerCase());
+  }
+  function renderThemes() {
+    $("#themes").innerHTML = THEMES.map((t, i) => `
+      <button type="button" class="theme ${themeMatches(t) ? "active" : ""}" data-theme="${i}">
+        <span class="theme__sw">${[t.primaria, t.banner, t.destaque, t.fundo].map((x) => `<i style="background:${x}"></i>`).join("")}</span>
+        ${esc(t.nome)}
+      </button>`).join("");
+  }
+
+  function renderAppearance() {
+    renderThemes();
+    $$("[data-cfg]", $("#tab-appearance")).forEach((el) => {
+      const v = getPath(st.config, el.dataset.cfg);
+      if (el.type === "checkbox") el.checked = !!v;
+      else el.value = v ?? "";
+    });
+    setLogoPreview();
+    renderBanners();
+    renderLinkList();
+    renderPreview();
+  }
+
+  function setLogoPreview() {
+    const img = $("#logoPreview");
+    img.dataset.path = st.config.logo || "";
+    delete img.dataset.triedRaw;
+    img.onerror = () => __imgFallback(img);
+    img.src = imgSrc(st.config.logo);
+    $("#logoRemove").hidden = !st.config.logo;
+  }
+
+  function renderLinkList() {
+    const cats = [...new Set(st.products.map((p) => p.categoria).filter(Boolean))];
+    $("#linkList").innerHTML = [
+      `<option value="#produtos">Lista de produtos</option>`,
+      ...cats.map((c) => `<option value="#categoria/${esc(c)}">Categoria: ${esc(c)}</option>`),
+      ...st.products.map((p) => `<option value="#produto/${esc(p.id)}">Produto: ${esc(p.nome)}</option>`),
+      st.config.whatsapp ? `<option value="https://wa.me/${esc(st.config.whatsapp)}">WhatsApp da loja</option>` : "",
+    ].join("");
+  }
+
+  function renderBanners() {
+    const list = st.config.banners;
+    const hb = st.config.tema.banner;
+    $("#bannerList").innerHTML = list.length ? list.map((b, i) => `
+      <div class="bn ${b.ativo === false ? "off" : ""}" data-i="${i}">
+        <div class="bn__img" style="${esc(b.imagem ? `background-image:url('${cssUrl(imgSrc(b.imagem))}')` : `background-image:linear-gradient(135deg, ${hb}, color-mix(in srgb, ${hb} 70%, #fff))`)}">
+          <label class="btn btn--ghost btn--sm">${b.imagem ? "Trocar foto" : "Adicionar foto"}<input type="file" accept="image/*" data-bn-file hidden /></label>
+          ${b.imagem ? `<button type="button" class="btn btn--ghost btn--sm" data-bn-act="noimg">Tirar foto</button>` : ""}
+        </div>
+        <div class="bn__body">
+          <label class="field"><span>Título</span><input data-bn="titulo" value="${esc(b.titulo || "")}" /></label>
+          <label class="field"><span>Texto</span><input data-bn="texto" value="${esc(b.texto || "")}" /></label>
+          <div class="row">
+            <label class="field"><span>Texto do botão</span><input data-bn="botaoTexto" value="${esc(b.botaoTexto || "")}" placeholder="Ex.: Ver anéis" /></label>
+            <label class="field"><span>Link do botão</span><input data-bn="botaoLink" list="linkList" value="${esc(b.botaoLink || "")}" placeholder="Escolha ou cole um link" /></label>
+          </div>
+        </div>
+        <div class="bn__foot">
+          <label class="check"><input type="checkbox" data-bn="ativo" ${b.ativo === false ? "" : "checked"} /> Ativo</label>
+          <button type="button" class="btn btn--ghost btn--sm" data-bn-act="up" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+          <button type="button" class="btn btn--ghost btn--sm" data-bn-act="down" ${i === list.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
+          <button type="button" class="btn btn--danger btn--sm" data-bn-act="del">Remover</button>
+        </div>
+      </div>`).join("") : `<p class="muted small">Nenhum banner. O site mostra o nome e o slogan da loja.</p>`;
+  }
+
+  function renderPreview() {
+    const c = st.config, t = c.tema;
+    ensureFont(t.fonteTitulos);
+    const pv = $("#preview");
+    const vars = {
+      "--pv-p": t.primaria, "--pv-onp": isLight(t.primaria) ? "#111" : "#fff",
+      "--pv-bg": t.fundo, "--pv-tx": t.texto, "--pv-promo": t.promo,
+      "--pv-hb": t.banner, "--pv-onh": isLight(t.banner) ? "#1c1917" : "#fff",
+      "--pv-ac": isLight(t.banner) ? t.texto : t.destaque,
+      "--pv-ft": `"${t.fonteTitulos}", Georgia, serif`,
+    };
+    Object.entries(vars).forEach(([k, v]) => pv.style.setProperty(k, v));
+    const banners = c.banners.filter((b) => b.ativo !== false && (b.titulo || b.texto || b.imagem));
+    const b = banners[0] || { titulo: c.nome, texto: c.slogan };
+    const heroBg = b.imagem ? `background-image:linear-gradient(90deg,rgba(0,0,0,.62),rgba(0,0,0,.15)),url('${cssUrl(imgSrc(b.imagem))}')` : "";
+    const prods = [...st.products].sort((x, y) => !!y.precoAntigo - !!x.precoAntigo).slice(0, 2);
+    const cats = [...new Set(st.products.map((p) => p.categoria).filter(Boolean))].slice(0, 3);
+    const showName = !c.logo || c.mostrarNome !== false;
+    pv.innerHTML = `
+      ${c.aviso.ativo && c.aviso.texto ? `<div class="pv__announce">${esc(c.aviso.texto)}</div>` : ""}
+      <div class="pv__header">
+        <span class="pv__brand">${c.logo ? `<img src="${esc(imgSrc(c.logo))}" alt="" />` : ""}${showName ? esc(c.nome || "") : ""}</span>
+        <span class="pv__search"></span><span class="pv__cart"></span>
+      </div>
+      <div class="pv__hero ${b.imagem ? "has-img" : ""}" style="${esc(heroBg)}">
+        ${b.titulo ? `<strong>${esc(b.titulo)}</strong>` : ""}
+        ${b.texto ? `<small>${esc(b.texto)}</small>` : ""}
+        ${b.botaoTexto && b.botaoLink ? `<span class="pv__btn">${esc(b.botaoTexto)}</span>` : ""}
+        ${banners.length > 1 ? `<span class="pv__dots">${banners.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</span>` : ""}
+      </div>
+      <div class="pv__chips"><span class="on">Todos</span>${cats.map((x) => `<span>${esc(x)}</span>`).join("")}</div>
+      <div class="pv__grid">${prods.map((p) => `
+        <div class="pv__card">
+          ${p.precoAntigo > p.preco ? `<span class="pv__badge">-${Math.round((1 - p.preco / p.precoAntigo) * 100)}%</span>` : ""}
+          <img src="${esc(imgSrc(p.imagem))}" alt="" />
+          <div><b>${esc(p.nome)}</b><span class="pv__price">${money(p.preco)}</span><div class="pv__add">+ Adicionar</div></div>
+        </div>`).join("")}</div>`;
+  }
+
+  function appearanceChanged() {
+    renderPending();
+    renderPreview();
+  }
+
+  function bindAppearance() {
+    $("#fontSelect").innerHTML = FONTS.map(([v, label]) => `<option value="${esc(v)}">${esc(label)}</option>`).join("");
+    const tab = $("#tab-appearance");
+
+    tab.addEventListener("input", (e) => {
+      const el = e.target.closest("[data-cfg]");
+      if (el) {
+        setPath(st.config, el.dataset.cfg, el.type === "checkbox" ? el.checked : el.value);
+        if (el.dataset.cfg.startsWith("tema.")) { renderThemes(); if (el.dataset.cfg === "tema.banner") renderBanners(); }
+        return appearanceChanged();
+      }
+      const field = e.target.closest("[data-bn]");
+      if (field) {
+        const card = field.closest(".bn");
+        const b = st.config.banners[+card.dataset.i];
+        b[field.dataset.bn] = field.type === "checkbox" ? field.checked : field.value;
+        card.classList.toggle("off", b.ativo === false);
+        appearanceChanged();
+      }
+    });
+
+    $("#themes").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-theme]");
+      if (!btn) return;
+      const { nome, ...t } = THEMES[+btn.dataset.theme];
+      st.config.tema = { ...st.config.tema, ...t };
+      renderAppearance();
+      renderPending();
+    });
+
+    $("#logoFile").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      e.target.value = "";
+      if (!file) return;
+      try {
+        const dataUrl = await resizeImage(file, 500, "image/png");
+        dropSiteImage(st.config.logo);
+        st.config.logo = `${SITE_IMG_DIR}logo-${Date.now().toString(36)}.png`;
+        st.pendingImages[st.config.logo] = dataUrl.split(",")[1];
+        setLogoPreview();
+        appearanceChanged();
+      } catch (err) { toast(err.message, true); }
+    });
+    $("#logoRemove").addEventListener("click", () => {
+      dropSiteImage(st.config.logo);
+      st.config.logo = "";
+      setLogoPreview();
+      appearanceChanged();
+    });
+
+    $("#addBanner").addEventListener("click", () => {
+      st.config.banners.push({ id: newId(), ativo: true, titulo: "Novo banner", texto: "", imagem: "", botaoTexto: "", botaoLink: "" });
+      renderBanners();
+      appearanceChanged();
+      const input = $("#bannerList .bn:last-child [data-bn=titulo]");
+      input.focus();
+      input.select();
+    });
+
+    $("#bannerList").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-bn-act]");
+      if (!btn) return;
+      const list = st.config.banners;
+      const i = +btn.closest(".bn").dataset.i;
+      const act = btn.dataset.bnAct;
+      if (act === "up" || act === "down") {
+        const j = act === "up" ? i - 1 : i + 1;
+        [list[i], list[j]] = [list[j], list[i]];
+      } else if (act === "del") {
+        if (!confirm("Remover este banner?")) return;
+        dropSiteImage(list[i].imagem);
+        list.splice(i, 1);
+      } else if (act === "noimg") {
+        dropSiteImage(list[i].imagem);
+        list[i].imagem = "";
+      }
+      renderBanners();
+      appearanceChanged();
+    });
+
+    $("#bannerList").addEventListener("change", async (e) => {
+      if (!e.target.matches("[data-bn-file]")) return;
+      const file = e.target.files[0];
+      if (!file) return;
+      const b = st.config.banners[+e.target.closest(".bn").dataset.i];
+      try {
+        const dataUrl = await resizeImage(file, 1600);
+        dropSiteImage(b.imagem);
+        b.imagem = `${SITE_IMG_DIR}banner-${b.id}-${Date.now().toString(36)}.jpg`;
+        st.pendingImages[b.imagem] = dataUrl.split(",")[1];
+        renderBanners();
+        appearanceChanged();
+      } catch (err) { toast(err.message, true); }
+    });
+  }
+
   /* ---------- Publish ---------- */
   async function publish() {
     const btn = $("#publishBtn");
     btn.disabled = true;
     btn.textContent = "Publicando...";
     try {
-      const used = new Set(st.products.map((p) => p.imagem));
+      const used = new Set([...st.products.map((p) => p.imagem), st.config.logo, ...(st.config.banners || []).map((b) => b.imagem)].filter(Boolean));
       for (const [path, b64] of Object.entries(st.pendingImages)) {
         if (used.has(path)) await putFile(path, b64, `Adiciona imagem ${path.split("/").pop()}`);
       }
@@ -530,11 +798,11 @@
 
     $$(".tab").forEach((t) => t.addEventListener("click", () => {
       $$(".tab").forEach((x) => x.classList.toggle("active", x === t));
-      $("#tab-products").hidden = t.dataset.tab !== "products";
-      $("#tab-settings").hidden = t.dataset.tab !== "settings";
+      $$("section[id^=tab-]").forEach((s) => (s.hidden = s.id !== "tab-" + t.dataset.tab));
     }));
 
     $("#search").addEventListener("input", renderList);
+    bindAppearance();
     $("#catFilter").addEventListener("change", renderList);
     $("#newProduct").addEventListener("click", () => openEditor(null));
 

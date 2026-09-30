@@ -63,12 +63,12 @@
   /* ---------- Setup da loja ---------- */
   function setupStore() {
     document.title = cfg.nome + " | Catálogo";
-    document.documentElement.style.setProperty("--primary", cfg.corPrimaria);
-    document.documentElement.style.setProperty("--primary-dark", `color-mix(in srgb, ${cfg.corPrimaria} 80%, #000)`);
+    applyTheme();
     $("#brandName").textContent = cfg.nome;
     if (cfg.logo) { $("#brandLogo").src = cfg.logo; $("#brandLogo").alt = cfg.nome; $("#brandLogo").hidden = false; }
-    $("#heroTitle").textContent = cfg.banner?.titulo || cfg.nome;
-    $("#heroText").textContent = cfg.banner?.texto || cfg.slogan;
+    $("#brandName").hidden = !!cfg.logo && cfg.mostrarNome === false;
+    renderAnnounce();
+    renderHero();
     $("#footerName").textContent = cfg.nome;
     $("#footerSlogan").textContent = cfg.slogan;
     const info = [];
@@ -99,9 +99,85 @@
     if (saved.recebimento) { const r = form.querySelector(`input[value="${saved.recebimento}"]`); if (r) r.checked = true; }
   }
 
+  const loadedFonts = ["Playfair Display", "Inter"];
+  function ensureFont(name) {
+    if (!name || loadedFonts.includes(name)) return;
+    loadedFonts.push(name);
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=" + name.replace(/ /g, "+") + ":wght@500;600;700&display=swap";
+    document.head.appendChild(l);
+  }
+  function isLight(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    if (!m) return false;
+    const n = parseInt(m[1], 16);
+    return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 > 0.62;
+  }
+  function applyTheme() {
+    const t = cfg.tema || {};
+    const primary = t.primaria || cfg.corPrimaria || "#1c1917";
+    const heroBg = t.banner || primary;
+    const vars = {
+      "--primary": primary,
+      "--primary-dark": `color-mix(in srgb, ${primary} 80%, #000)`,
+      "--on-primary": isLight(primary) ? "#111" : "#fff",
+      "--hero-bg": heroBg,
+      "--on-hero": isLight(heroBg) ? "#1c1917" : "#fff",
+      "--hero-accent": isLight(heroBg) ? t.texto || "#1c1917" : t.destaque || "#d6d3d1",
+    };
+    if (t.fundo) vars["--bg"] = t.fundo;
+    if (t.texto) vars["--text"] = t.texto;
+    if (t.destaque) vars["--silver"] = t.destaque;
+    if (t.promo) vars["--promo"] = t.promo;
+    if (t.fonteTitulos) { ensureFont(t.fonteTitulos); vars["--font-title"] = `"${t.fonteTitulos}", Georgia, serif`; }
+    Object.entries(vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+  }
+  function linkAttrs(link) {
+    return `href="${esc(link)}"` + (/^https?:/i.test(link) ? ' target="_blank" rel="noopener"' : "");
+  }
+  function renderAnnounce() {
+    const a = cfg.aviso || {};
+    const el = $("#announce");
+    el.hidden = !(a.ativo && a.texto);
+    if (!el.hidden) el.innerHTML = a.link ? `<a ${linkAttrs(a.link)}>${esc(a.texto)}</a>` : esc(a.texto);
+  }
+  function heroSlides() {
+    const list = cfg.banners || (cfg.banner ? [cfg.banner] : []);
+    const active = list.filter((b) => b.ativo !== false && (b.titulo || b.texto || b.imagem));
+    return active.length ? active : [{ titulo: cfg.nome, texto: cfg.slogan }];
+  }
+  function renderHero() {
+    const slides = heroSlides();
+    const track = $("#heroTrack"), dots = $("#heroDots");
+    track.innerHTML = slides.map((b, i) => {
+      const bg = b.imagem ? ` style="background-image:linear-gradient(90deg,rgba(0,0,0,.62),rgba(0,0,0,.15)),url('${esc(encodeURI(b.imagem).replace(/'/g, "%27"))}')"` : "";
+      const h = i === 0 ? "h1" : "h2";
+      return `<div class="hero__slide${b.imagem ? " has-img" : ""}"${bg}>
+        <div class="container">
+          ${b.titulo ? `<${h}>${esc(b.titulo)}</${h}>` : ""}
+          ${b.texto ? `<p>${esc(b.texto)}</p>` : ""}
+          ${b.botaoTexto && b.botaoLink ? `<a class="hero__btn" ${linkAttrs(b.botaoLink)}>${esc(b.botaoTexto)}</a>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+    dots.innerHTML = slides.length > 1 ? slides.map((_, i) => `<button type="button" data-i="${i}" aria-label="Banner ${i + 1}"></button>`).join("") : "";
+    if (slides.length < 2) return;
+    const current = () => Math.round(track.scrollLeft / (track.clientWidth || 1));
+    const mark = () => $$("button", dots).forEach((d, j) => d.classList.toggle("active", j === current()));
+    const go = (i) => track.scrollTo({ left: i * track.clientWidth });
+    let timer;
+    const play = () => { clearInterval(timer); timer = setInterval(() => go((current() + 1) % slides.length), 6000); };
+    track.addEventListener("scroll", mark, { passive: true });
+    track.addEventListener("pointerdown", play);
+    dots.addEventListener("click", (e) => { const d = e.target.closest("[data-i]"); if (d) { go(+d.dataset.i); play(); } });
+    mark();
+    play();
+  }
+
   function renderInstagram() {
     const url = instagramUrl();
-    $("#instagram").hidden = !url;
+    $("#instagram").hidden = !url || cfg.secoes?.instagram === false;
     $("#igHeader").hidden = !url;
     if (!url) return;
     $("#igHeader").href = url;
@@ -366,6 +442,15 @@
   }
 
   function handleRoute() {
+    const c = location.hash.match(/^#categoria\/(.+)$/);
+    if (c) {
+      const cat = decodeURIComponent(c[1]);
+      state.category = products.some((p) => p.categoria === cat) ? cat : "Todos";
+      renderCategories(); renderGrid();
+      history.replaceState(null, "", location.pathname + location.search);
+      $("#produtos").scrollIntoView({ behavior: "smooth" });
+      return;
+    }
     const m = location.hash.match(/^#produto\/(.+)$/);
     if (m) openProduct(decodeURIComponent(m[1]), false);
     else { $$(".overlay").forEach((o) => (o.hidden = true)); document.body.classList.remove("no-scroll"); }

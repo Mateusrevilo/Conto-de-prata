@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <div class="announce" id="announce" hidden></div>
   <header class="header">
     <div class="container header__inner">
       <a href="#" class="brand" id="brand">
@@ -36,14 +37,12 @@
   </header>
 
   <main>
-    <section class="hero">
-      <div class="container">
-        <h1 id="heroTitle"></h1>
-        <p id="heroText"></p>
-      </div>
+    <section class="hero" id="hero" aria-label="Destaques">
+      <div class="hero__track" id="heroTrack"></div>
+      <div class="hero__dots" id="heroDots"></div>
     </section>
 
-    <section class="container">
+    <section class="container" id="produtos">
       <nav class="chips" id="categories" aria-label="Categorias"></nav>
       <div class="toolbar">
         <span id="resultCount" class="muted"></span>
