@@ -1,6 +1,6 @@
 # Conto de Pratas — catálogo com pedido pelo WhatsApp
 
-Site estático (HTML + CSS + JS puro, sem build) hospedado no GitHub Pages. O cliente navega pelo catálogo, monta o carrinho e envia o pedido pronto para o WhatsApp da loja.
+Site estático (HTML + CSS + JS puro, sem build) hospedado na Vercel (https://conto-de-prata.vercel.app, painel em /admin.html), que publica automaticamente a cada commit na branch `main`. O cliente navega pelo catálogo, monta o carrinho e envia o pedido pronto para o WhatsApp da loja.
 
 ## Recursos
 - Busca (ignora acentos), filtro por categoria e ordenação
