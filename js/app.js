@@ -1,10 +1,10 @@
 (function () {
   "use strict";
 
-  const cfg = window.STORE_CONFIG;
-  const products = (window.PRODUCTS || []).map((p) => ({ disponivel: true, ...p }));
-  const CART_KEY = "catalogo_cart_" + cfg.whatsapp;
-  const CUSTOMER_KEY = "catalogo_customer_" + cfg.whatsapp;
+  let cfg = {};
+  let products = [];
+  const CART_KEY = "catalogo_cart";
+  const CUSTOMER_KEY = "catalogo_customer";
 
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -12,15 +12,31 @@
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const norm = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const byId = (id) => products.find((p) => p.id === id);
-  const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#eef0f3"/><text x="50" y="58" font-size="30" text-anchor="middle">🛍️</text></svg>');
+  const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f5f5f4"/><circle cx="50" cy="54" r="18" fill="none" stroke="#a8a29e" stroke-width="5"/><path d="M44 30l6-8 6 8z" fill="#d6d3d1"/></svg>');
 
   const state = {
     category: "Todos",
     query: "",
     sort: "relevancia",
-    cart: load(CART_KEY, []).filter((i) => byId(i.id)),
+    cart: [],
     modal: null,
   };
+
+  async function fetchJSON(path) {
+    const res = await fetch(path + "?v=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error(path + ": " + res.status);
+    return res.json();
+  }
+
+  function instagramUrl() {
+    const ig = (cfg.instagram || "").trim();
+    if (!ig) return "";
+    return /^https?:/i.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/";
+  }
+  function instagramHandle() {
+    const ig = (cfg.instagram || "").trim().split("?")[0].replace(/\/+$/, "");
+    return "@" + ig.split("/").pop().replace(/^@/, "");
+  }
 
   function load(key, fallback) {
     try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
@@ -59,9 +75,11 @@
     if (cfg.endereco) info.push(`<span>📍 ${esc(cfg.endereco)}</span>`);
     if (cfg.horario) info.push(`<span>🕒 ${esc(cfg.horario)}</span>`);
     info.push(`<a href="${waLink(`Olá! Vim pelo catálogo da ${cfg.nome}.`)}" target="_blank" rel="noopener">💬 WhatsApp</a>`);
-    if (cfg.instagram) info.push(`<a href="${esc(cfg.instagram)}" target="_blank" rel="noopener">📷 Instagram</a>`);
+    if (cfg.instagram) info.push(`<a href="${esc(instagramUrl())}" target="_blank" rel="noopener">📷 ${esc(instagramHandle())}</a>`);
     $("#footerInfo").innerHTML = info.join("");
     $("#waFloat").href = waLink(`Olá! Vim pelo catálogo da ${cfg.nome} e gostaria de mais informações.`);
+
+    renderInstagram();
 
     const del = cfg.entrega || {};
     const opts = [];
@@ -79,6 +97,20 @@
     const form = $("#checkoutForm");
     ["nome", "endereco"].forEach((k) => { if (saved[k]) form.elements[k].value = saved[k]; });
     if (saved.recebimento) { const r = form.querySelector(`input[value="${saved.recebimento}"]`); if (r) r.checked = true; }
+  }
+
+  function renderInstagram() {
+    const url = instagramUrl();
+    $("#instagram").hidden = !url;
+    $("#igHeader").hidden = !url;
+    if (!url) return;
+    $("#igHeader").href = url;
+    $("#igHandle").textContent = instagramHandle();
+    $("#igFollow").href = url;
+    const pics = [...products].sort((a, b) => !!b.destaque - !!a.destaque).filter((p) => p.imagem).slice(0, 6);
+    $("#igGrid").innerHTML = pics.map((p) =>
+      `<a href="${esc(url)}" target="_blank" rel="noopener" class="insta__item" aria-label="Ver no Instagram"><img src="${esc(p.imagem)}" alt="${esc(p.nome)}" loading="lazy" onerror="this.src='${PLACEHOLDER}'" /></a>`
+    ).join("");
   }
 
   /* ---------- Catálogo ---------- */
@@ -417,10 +449,25 @@
     window.addEventListener("popstate", handleRoute);
   }
 
-  setupStore();
-  renderCategories();
-  renderGrid();
-  renderCart();
-  bind();
-  handleRoute();
+  async function boot() {
+    try {
+      const [c, p] = await Promise.all([fetchJSON("data/config.json"), fetchJSON("data/products.json")]);
+      cfg = c;
+      products = p.map((x) => ({ disponivel: true, ...x }));
+    } catch (err) {
+      console.error(err);
+      $("#empty").textContent = "Não foi possível carregar o catálogo. Recarregue a página.";
+      $("#empty").hidden = false;
+      return;
+    }
+    state.cart = load(CART_KEY, []).filter((i) => byId(i.id));
+    setupStore();
+    renderCategories();
+    renderGrid();
+    renderCart();
+    bind();
+    handleRoute();
+  }
+
+  boot();
 })();

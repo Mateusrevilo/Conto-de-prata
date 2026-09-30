@@ -1,0 +1,28 @@
+{
+  "nome": "Conto de Pratas",
+  "slogan": "Joias em prata 925 que contam a sua história",
+  "whatsapp": "5521980598585",
+  "moeda": "BRL",
+  "instagram": "contodepratass",
+  "endereco": "",
+  "horario": "Seg a Sáb, 9h às 18h",
+  "corPrimaria": "#1c1917",
+  "logo": "",
+  "banner": {
+    "titulo": "Prata 925 para todos os momentos",
+    "texto": "Escolha suas peças favoritas, monte o pedido e finalize em segundos pelo WhatsApp."
+  },
+  "entrega": {
+    "retirada": true,
+    "entrega": true,
+    "taxaEntrega": 10.0,
+    "freteGratisAcimaDe": 200.0
+  },
+  "pagamentos": [
+    "Pix",
+    "Cartão de crédito",
+    "Cartão de débito",
+    "Dinheiro"
+  ],
+  "pedidoMinimo": 0
+}

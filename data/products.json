@@ -1,0 +1,124 @@
+[
+  {
+    "id": "anel-solitario",
+    "nome": "Anel Solitário Zircônia",
+    "categoria": "Anéis",
+    "preco": 89.9,
+    "precoAntigo": 119.9,
+    "descricao": "Anel solitário em prata 925 com zircônia cravejada. Delicado e perfeito para o dia a dia ou para presentear.",
+    "variacoes": [
+      {
+        "nome": "Aro",
+        "opcoes": [
+          "12",
+          "14",
+          "16",
+          "18",
+          "20",
+          "22"
+        ]
+      }
+    ],
+    "destaque": true,
+    "imagem": "img/exemplos/anel-solitario.svg",
+    "disponivel": true
+  },
+  {
+    "id": "anel-trancado",
+    "nome": "Anel Trançado",
+    "categoria": "Anéis",
+    "preco": 69.9,
+    "descricao": "Anel trançado em prata 925 com acabamento polido.",
+    "variacoes": [
+      {
+        "nome": "Aro",
+        "opcoes": [
+          "12",
+          "14",
+          "16",
+          "18",
+          "20",
+          "22"
+        ]
+      }
+    ],
+    "imagem": "img/exemplos/anel-trancado.svg",
+    "disponivel": true
+  },
+  {
+    "id": "colar-ponto-de-luz",
+    "nome": "Colar Ponto de Luz",
+    "categoria": "Colares",
+    "preco": 99.9,
+    "descricao": "Corrente veneziana 45cm em prata 925 com pingente ponto de luz em zircônia.",
+    "destaque": true,
+    "imagem": "img/exemplos/colar-ponto-de-luz.svg",
+    "disponivel": true
+  },
+  {
+    "id": "colar-coracao",
+    "nome": "Colar Coração",
+    "categoria": "Colares",
+    "preco": 109.9,
+    "precoAntigo": 139.9,
+    "descricao": "Corrente 40cm + extensor com pingente de coração em prata 925.",
+    "imagem": "img/exemplos/colar-coracao.svg",
+    "disponivel": true
+  },
+  {
+    "id": "brinco-argola",
+    "nome": "Brinco Argola Média",
+    "categoria": "Brincos",
+    "preco": 79.9,
+    "descricao": "Argola lisa 3cm em prata 925, fecho click.",
+    "variacoes": [
+      {
+        "nome": "Tamanho",
+        "opcoes": [
+          "2cm",
+          "3cm",
+          "4cm"
+        ]
+      }
+    ],
+    "imagem": "img/exemplos/brinco-argola.svg",
+    "disponivel": true
+  },
+  {
+    "id": "brinco-gota",
+    "nome": "Brinco Gota Cristal",
+    "categoria": "Brincos",
+    "preco": 74.9,
+    "descricao": "Brinco gota com cristal azul claro e base em prata 925.",
+    "destaque": true,
+    "imagem": "img/exemplos/brinco-gota.svg",
+    "disponivel": true
+  },
+  {
+    "id": "pulseira-riviera",
+    "nome": "Pulseira Riviera",
+    "categoria": "Pulseiras",
+    "preco": 149.9,
+    "descricao": "Pulseira riviera cravejada com zircônias, 18cm, prata 925.",
+    "imagem": "img/exemplos/pulseira-riviera.svg",
+    "disponivel": true
+  },
+  {
+    "id": "pulseira-elos",
+    "nome": "Pulseira Elos",
+    "categoria": "Pulseiras",
+    "preco": 119.9,
+    "descricao": "Pulseira de elos em prata 925, 19cm, fecho lagosta.",
+    "disponivel": false,
+    "imagem": "img/exemplos/pulseira-elos.svg"
+  },
+  {
+    "id": "tornozeleira-estrelas",
+    "nome": "Tornozeleira Estrelas",
+    "categoria": "Tornozeleiras",
+    "preco": 59.9,
+    "descricao": "Tornozeleira em prata 925 com pingentes de estrela, 23cm + extensor.",
+    "imagem": "img/exemplos/tornozeleira-estrelas.svg",
+    "disponivel": true
+  }
+]

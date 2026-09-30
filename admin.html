@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Painel | Conto de Pratas</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <!-- Login -->
+  <section class="login" id="loginView">
+    <form class="login__card" id="loginForm">
+      <h1>Painel da loja</h1>
+      <p class="muted">Entre com seu token do GitHub para gerenciar os produtos.</p>
+      <label class="field">
+        <span>Token do GitHub</span>
+        <input type="password" name="token" required autocomplete="current-password" placeholder="github_pat_..." />
+      </label>
+      <details class="adv" id="repoDetails">
+        <summary>Repositório</summary>
+        <div class="row">
+          <label class="field"><span>Usuário</span><input name="owner" required /></label>
+          <label class="field"><span>Repositório</span><input name="repo" required /></label>
+        </div>
+      </details>
+      <label class="check"><input type="checkbox" name="remember" checked /> Lembrar neste dispositivo</label>
+      <p class="error" id="loginError" hidden></p>
+      <button class="btn btn--primary btn--block" type="submit" id="loginBtn">Entrar</button>
+      <details class="help">
+        <summary>Como criar o token?</summary>
+        <ol>
+          <li>Acesse <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a></li>
+          <li>Dê um nome (ex.: "Painel loja") e escolha a validade.</li>
+          <li>Em <b>Repository access</b>, escolha <b>Only select repositories</b> e selecione o repositório do site.</li>
+          <li>Em <b>Permissions → Repository permissions → Contents</b>, escolha <b>Read and write</b>.</li>
+          <li>Clique em <b>Generate token</b>, copie e cole aqui.</li>
+        </ol>
+      </details>
+    </form>
+  </section>
+
+  <!-- App -->
+  <div class="app" id="appView" hidden>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <strong id="storeName">Painel</strong>
+        <nav class="tabs">
+          <button class="tab active" data-tab="products">Produtos</button>
+          <button class="tab" data-tab="settings">Configurações</button>
+        </nav>
+        <div class="topbar__right">
+          <a href="./" target="_blank" rel="noopener" class="link">Ver site ↗</a>
+          <button class="link" id="logoutBtn">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section id="tab-products">
+        <div class="toolbar">
+          <input type="search" id="search" placeholder="Buscar produto..." />
+          <select id="catFilter"><option value="">Todas as categorias</option></select>
+          <button class="btn btn--primary" id="newProduct">+ Novo produto</button>
+        </div>
+        <p class="muted small" id="countInfo"></p>
+        <div class="list" id="productList"></div>
+        <p class="empty" id="emptyList" hidden>Nenhum produto encontrado.</p>
+      </section>
+
+      <section id="tab-settings" hidden>
+        <form class="settings" id="settingsForm">
+          <fieldset>
+            <legend>Loja</legend>
+            <label class="field"><span>Nome da loja</span><input name="nome" required /></label>
+            <label class="field"><span>Slogan</span><input name="slogan" /></label>
+            <div class="row">
+              <label class="field"><span>WhatsApp (com DDI e DDD, só números)</span><input name="whatsapp" inputmode="numeric" required pattern="\d{12,13}" placeholder="5521999999999" /></label>
+              <label class="field"><span>Instagram (@ ou link)</span><input name="instagram" placeholder="@minhaloja" /></label>
+            </div>
+            <div class="row">
+              <label class="field"><span>Horário de atendimento</span><input name="horario" /></label>
+              <label class="field"><span>Endereço (opcional)</span><input name="endereco" /></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Banner da página inicial</legend>
+            <label class="field"><span>Título</span><input name="banner.titulo" /></label>
+            <label class="field"><span>Texto</span><textarea name="banner.texto" rows="2"></textarea></label>
+          </fieldset>
+          <fieldset>
+            <legend>Entrega e pagamento</legend>
+            <div class="row">
+              <label class="check"><input type="checkbox" name="entrega.retirada" /> Permitir retirada</label>
+              <label class="check"><input type="checkbox" name="entrega.entrega" /> Fazer entregas</label>
+            </div>
+            <div class="row">
+              <label class="field"><span>Taxa de entrega (R$)</span><input name="entrega.taxaEntrega" type="number" step="0.01" min="0" /></label>
+              <label class="field"><span>Frete grátis acima de (R$, vazio = desativado)</span><input name="entrega.freteGratisAcimaDe" type="number" step="0.01" min="0" /></label>
+              <label class="field"><span>Pedido mínimo (R$)</span><input name="pedidoMinimo" type="number" step="0.01" min="0" /></label>
+            </div>
+            <label class="field"><span>Formas de pagamento (separadas por vírgula)</span><input name="pagamentos" /></label>
+          </fieldset>
+          <button class="btn btn--primary" type="submit">Aplicar configurações</button>
+        </form>
+      </section>
+    </main>
+
+    <div class="publishbar" id="publishBar" hidden>
+      <span id="pendingInfo"></span>
+      <div class="publishbar__actions">
+        <button class="btn btn--ghost" id="discardBtn">Descartar</button>
+        <button class="btn btn--success" id="publishBtn">Publicar no site</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editor de produto -->
+  <div class="overlay" id="editor" hidden>
+    <form class="dialog" id="productForm" novalidate>
+      <div class="dialog__head">
+        <h2 id="editorTitle">Novo produto</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Fechar">&times;</button>
+      </div>
+      <div class="dialog__body">
+        <div class="img-picker">
+          <img id="imgPreview" alt="" />
+          <div>
+            <label class="btn btn--ghost">
+              Escolher foto
+              <input type="file" id="imgFile" accept="image/*" hidden />
+            </label>
+            <p class="muted small">JPG ou PNG. A foto é redimensionada automaticamente.</p>
+            <input name="imagem" id="imgUrl" placeholder="ou cole um link de imagem" />
+          </div>
+        </div>
+        <label class="field"><span>Nome *</span><input name="nome" required /></label>
+        <div class="row">
+          <label class="field"><span>Categoria *</span><input name="categoria" list="catList" required /></label>
+          <label class="field"><span>Preço (R$) *</span><input name="preco" type="number" step="0.01" min="0" required /></label>
+          <label class="field"><span>Preço antigo (promoção)</span><input name="precoAntigo" type="number" step="0.01" min="0" /></label>
+        </div>
+        <datalist id="catList"></datalist>
+        <label class="field"><span>Descrição</span><textarea name="descricao" rows="3"></textarea></label>
+        <label class="field">
+          <span>Variações (uma por linha, no formato <code>Nome: opção1, opção2</code>)</span>
+          <textarea name="variacoes" rows="2" placeholder="Aro: 12, 14, 16, 18&#10;Cor: Prata, Dourado"></textarea>
+        </label>
+        <div class="row">
+          <label class="check"><input type="checkbox" name="disponivel" /> Disponível (desmarque se esgotado)</label>
+          <label class="check"><input type="checkbox" name="destaque" /> Destaque (aparece primeiro)</label>
+        </div>
+        <p class="error" id="formError" hidden></p>
+      </div>
+      <div class="dialog__foot">
+        <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
+        <button type="submit" class="btn btn--primary">Salvar produto</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="js/admin.js"></script>
+</body>
+</html>
