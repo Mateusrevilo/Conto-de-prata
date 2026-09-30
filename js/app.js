@@ -48,9 +48,25 @@
   function waLink(text) {
     return "https://wa.me/" + cfg.whatsapp.replace(/\D/g, "") + (text ? "?text=" + encodeURIComponent(text) : "");
   }
-  function openWhats(text) {
-    window.open(waLink(text), "_blank", "noopener");
+  // Navegadores internos (Instagram, Facebook, WhatsApp...) e celulares costumam bloquear
+  // abas novas; nesses casos o link abre na mesma aba, o que também aciona o app.
+  const sameTabLinks = /Instagram|FBAN|FBAV|FB_IAB|WhatsApp|Line\/|MicroMessenger|; wv\)/i.test(navigator.userAgent) ||
+    matchMedia("(pointer: coarse)").matches;
+  function openExternal(url) {
+    if (sameTabLinks) { location.href = url; return; }
+    const w = window.open(url, "_blank");
+    if (w) w.opener = null;
+    else location.href = url;
   }
+  function openWhats(text) {
+    openExternal(waLink(text));
+  }
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest('a[target="_blank"]');
+    if (!a || !sameTabLinks || e.defaultPrevented) return;
+    e.preventDefault();
+    location.href = a.href;
+  });
 
   function toast(msg) {
     const t = $("#toast");
